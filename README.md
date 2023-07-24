@@ -21,24 +21,8 @@ On deployment the contract has been set to 70 % approval, 365 days of contributi
 dfx start --background
 ```
 
-To create canister contract
+To deploy the canister
 
 ```bash
-dfx canister create DAO
-```
-
-To build canister
-
-```bash
-dfx build DAO
-```
-
-To install the canister
-
-```bash
-dfx canister install DAO
-```
-
-```bash
-dfx deploy DAO init --argument '(record {contributionTime: {time in nanoseconds}, voteTime: {time in nanoseconds}, quorum: {quorum}, canisterAddress: {address of canister}})'
+dfx deploy --argument '(record {contributionTime= <nat>; voteTime= <nat>; quorum= <nat>; canisterAddress= "CANISTER_ADDRESS"})' DAO
 ```

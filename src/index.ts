@@ -12,7 +12,7 @@ type Proposal = Record<{
     id: int32;
     title: string;
     amount: nat64;
-    recipient: string;
+    recipient: Address;
     votes: nat64;
     ends: nat64;
     executed: boolean;
@@ -27,11 +27,11 @@ type initPayload = Record<{
 }>
 
 type ProposalPayload = Record<{
-    id: int32;
     title: string;
     amount: nat64;
-    recipient: string;
+    recipient: Address;
 }>
+
 
 const proposalStorage = new StableBTreeMap<int32, Proposal>(0, 44, 10240);
 const sharesStorage = new StableBTreeMap<Principal, nat64>(2, 100, 8);
@@ -68,8 +68,6 @@ export function init(payload: initPayload): void {
     lockedFunds = BigInt(0);
     canisterAddress = payload.canisterAddress;
     icpCanister = new Ledger(Principal.fromText(payload.canisterAddress))
-    
-    ic.trap("Initialization complete")
 }
 
 // function to deposit icp tokens and join the dao
@@ -81,7 +79,7 @@ export async function joinDAO(amount: nat64): Promise<Result<string, string>>  {
     }
 
     // check if amount is not less than 0   
-    if(amount < BigInt(0)){
+    if(amount <= BigInt(0)){
         return Result.Err<string, string>("please enter an amount greater than zero");
     }
 
@@ -197,7 +195,7 @@ export function createProposal(payload: ProposalPayload): Result<string, string>
     }
 
     // check if user is a part of the dao
-    if(sharesStorage.get(caller) == Opt.None){
+    if(sharesStorage.get(caller).Some === undefined){
         return Result.Err<string, string>("you don't have any shares");
     }
 
@@ -217,7 +215,8 @@ export function createProposal(payload: ProposalPayload): Result<string, string>
     proposalStorage.insert(nextProposalId, proposal);
 
     // update variables
-    lockedFunds = availableFunds - payload.amount;
+    availableFunds = availableFunds - payload.amount;
+    lockedFunds = lockedFunds + payload.amount;
 
     nextProposalId = nextProposalId + 1;
 
@@ -283,9 +282,8 @@ export function executeProposal(proposalId: int32): Result<string, string> {
     let caller = ic.caller();
 
     let executed: boolean = false;
-
     // check if caller is admin
-    if(caller !== admin){
+    if(caller.toString() !== admin.toString()){
         return Result.Err<string, string>("only admin can execute proposal");
     }
 
@@ -307,7 +305,7 @@ export function executeProposal(proposalId: int32): Result<string, string> {
                 executed = true;
             }else{
                 //release funds back to available funds
-                availableFunds = availableFunds + lockedFunds;
+                availableFunds = availableFunds + proposal.amount;
             }
 
             lockedFunds = lockedFunds - proposal.amount;
@@ -327,6 +325,7 @@ $query;
 export function getProposals(): Result<Vec<Proposal>, string> {
     return Result.Ok(proposalStorage.values());
 }
+
 
 $query;
 export function getProposal(proposalId: int32): Result<Proposal, string> {
