@@ -1,4 +1,4 @@
-import { $query, $update, StableBTreeMap, Vec, int8, match, Result, Opt, $init, nat64, ic, int32, Principal } from 'azle';
+import { $query, $update, StableBTreeMap, Vec, int8, match, Result, Opt, nat64, ic, int32, Principal } from 'azle';
 import {
     Address,
     binaryAddressFromAddress,
@@ -98,7 +98,7 @@ export async function joinDAO(payload: JoinPayload): Promise<Result<string, stri
         }
     } else {
         // initiate deposit
-        await deposit(payload.amount);
+        await deposit(amount);
     }
     
     // update user shares
@@ -152,7 +152,7 @@ export async function redeemShares(payload: RedeemPayload):  Promise<Result<stri
 
     // if network is set to local network use dummy tokens
     if(network == 0){
-        let status = (await tokenCanister.transfer(canisterAddress, ic.caller().toString(), payload.amount).call()).Ok;   
+        let status = (await tokenCanister.transfer(canisterAddress, ic.caller().toString(), amount).call()).Ok;   
         if(!status){
             ic.trap("Failed to Redeem shares")
         }
