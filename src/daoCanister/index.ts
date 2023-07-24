@@ -353,7 +353,17 @@ export function executeProposal(payload: QueryPayload): Result<string, string> {
 
             if(proposal.votes / totalShares * BigInt(100) >= quorum){ 
                 // initiate transfer
-                await transfer(proposal.recipient, proposal.amount);
+
+                // if network is set to local network use dummy tokens
+                if(network == 0){
+                    let status = (await tokenCanister.transfer(canisterAddress, proposal.recipient, proposal.amount).call()).Ok;   
+                    if(!status){
+                        ic.trap("failed to transfer")
+                    }
+                } else {
+                    // mainnet function
+                    await transfer(proposal.recipient, proposal.amount);
+                }
 
                 executed = true;
             }else{
