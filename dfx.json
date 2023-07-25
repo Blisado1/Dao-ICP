@@ -4,10 +4,19 @@
       "main": "src/index.ts",
       "type": "custom",
       "build": "npx azle DAO",
-      "root": "src",
-      "ts": "src/index.ts",
-      "candid": "src/index.did",
-      "wasm": ".azle/DAO/DAO.wasm.gz"
+      "root": "src/daoCanister",
+      "ts": "src/daoCanister/index.ts",
+      "candid": "src/daoCanister/index.did",
+      "wasm": ".azle/DAO/DAO.wasm.gz",
+      "optimize": "size" 
+    },
+    "token": {
+      "type": "custom",
+      "build": "npx azle token",
+      "root": "src/tokenCanister",
+      "ts": "src/tokenCanister/index.ts",
+      "candid": "src/tokenCanister/index.did",
+      "wasm": ".azle/token/token.wasm.gz"
     }
   }
 }

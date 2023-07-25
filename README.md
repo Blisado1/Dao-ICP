@@ -24,5 +24,16 @@ dfx start --background
 To deploy the canister
 
 ```bash
-dfx deploy --argument '(record {contributionTime= <nat>; voteTime= <nat>; quorum= <nat>; canisterAddress= "CANISTER_ADDRESS"})' DAO
+dfx deploy --argument '(record {contributionTime= <nat>; voteTime= <nat>; quorum= <nat>; canisterAddress= "CANISTER_ADDRESS"; tokenAddress="TOKEN_ADDRESS"})' DAO
 ```
+
+## Testing locally
+
+Added the dummy tokens which allows users to test the canister locally.
+
+Steps involved:
+
+- Deploy canister `dfx deploy`
+- Run the `initialize` function setting the payload network to 0
+- Then claim faucet dummy tokens using the `getFaucetTokens` function
+- Then you should be able to test the canister properly.

@@ -1,0 +1,46 @@
+type AddressPayload = record { address : text };
+type InitPayload = record {
+  voteTime : nat64;
+  tokenAddress : text;
+  network : int8;
+  canisterAddress : text;
+  quorum : nat64;
+  contributionTime : nat64;
+};
+type JoinPayload = record { amount : nat64 };
+type ManualReply = variant { Ok : bool; Err : text };
+type ManualReply_1 = variant { Ok : nat64; Err : text };
+type Proposal = record {
+  id : int32;
+  title : text;
+  votes : nat64;
+  ends : nat64;
+  recipient : text;
+  ended : bool;
+  executed : bool;
+  amount : nat64;
+};
+type ProposalPayload = record {
+  title : text;
+  recipient : text;
+  amount : nat64;
+};
+type QueryPayload = record { proposalId : int32 };
+type RedeemPayload = record { addressTo : text; amount : nat64 };
+type TransferPayload = record { to : text; amount : nat64 };
+type _AzleResult = variant { Ok : text; Err : text };
+type _AzleResult_1 = variant { Ok : Proposal; Err : text };
+type _AzleResult_2 = variant { Ok : vec Proposal; Err : text };
+service : () -> {
+  createProposal : (ProposalPayload) -> (_AzleResult);
+  executeProposal : (QueryPayload) -> (_AzleResult);
+  getFaucetTokens : () -> (ManualReply);
+  getProposal : (int32) -> (_AzleResult_1) query;
+  getProposals : () -> (_AzleResult_2) query;
+  init : (InitPayload) -> (_AzleResult);
+  joinDAO : (JoinPayload) -> (_AzleResult);
+  redeemShares : (RedeemPayload) -> (_AzleResult);
+  transferShares : (TransferPayload) -> (_AzleResult);
+  voteProposal : (QueryPayload) -> (_AzleResult);
+  walletBalanceLocal : (AddressPayload) -> (ManualReply_1);
+}

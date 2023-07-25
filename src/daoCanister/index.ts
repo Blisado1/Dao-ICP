@@ -1,4 +1,4 @@
-import { $query, $update, Record, StableBTreeMap, Vec, match, Result, Opt, $init, nat64, ic, int32, Principal } from 'azle';
+import { $query, $update, StableBTreeMap, Vec, int8, match, Result, Opt, nat64, ic, int32, Principal } from 'azle';
 import {
     Address,
     binaryAddressFromAddress,
@@ -8,36 +8,13 @@ import {
     TransferResult
 } from 'azle/canisters/ledger';
 
-type Proposal = Record<{
-    id: int32;
-    title: string;
-    amount: nat64;
-    recipient: Address;
-    votes: nat64;
-    ends: nat64;
-    executed: boolean;
-    ended: boolean;
-}>
+import {Token, InitPayload, Proposal, ProposalPayload, JoinPayload, RedeemPayload, TransferPayload, QueryPayload, AddressPayload } from '../types';
 
-type initPayload = Record<{
-    contributionTime: nat64;
-    voteTime: nat64;
-    quorum: nat64;
-    canisterAddress: string;
-}>
-
-type ProposalPayload = Record<{
-    title: string;
-    amount: nat64;
-    recipient: Address;
-}>
-
-
-const proposalStorage = new StableBTreeMap<int32, Proposal>(0, 44, 10240);
-const sharesStorage = new StableBTreeMap<Principal, nat64>(2, 100, 8);
+const proposalStorage = new StableBTreeMap<int32, Proposal>(0, 44, 10000);
+const sharesStorage = new StableBTreeMap<Principal, nat64>(1, 100, 100);
 
 // investor vote mapping ${Principal + proposalId}
-const votesMapping = new StableBTreeMap<string, boolean>(3, 120, 8);
+const votesMapping = new StableBTreeMap<string, boolean>(2, 120, 100);
 
 let totalShares: nat64;
 let availableFunds:  nat64;
@@ -47,14 +24,31 @@ let nextProposalId: int32;
 let quorum: nat64;
 let voteTime: nat64;
 let admin: Principal;
+let network: int8;
+let initialized: boolean;
 
 let canisterAddress: Address;
 let icpCanister: Ledger;
+let tokenCanister: Token;
 
-$init
-export function init(payload: initPayload): void {
+$update
+export async function init(payload: InitPayload): Promise<Result<string, string>> {
+    // check if canister is already initialized
+    if(initialized){
+        ic.trap("already initialized")
+    }
+
     if(payload.quorum < 0 || payload.quorum > 100){
         ic.trap("quorum must be between 0 and 100")
+    }
+
+    // set up network for testing
+    if (payload.network == 0){
+        //set up dummyTokens
+        network = 0;
+        await tokenCanister.initializeSupply('ICToken', payload.canisterAddress, 'ICT', 1_000_000_000_000n).call();
+    }else{
+        network = 1;
     }
 
     // initialize variables
@@ -67,12 +61,23 @@ export function init(payload: initPayload): void {
     availableFunds = BigInt(0);
     lockedFunds = BigInt(0);
     canisterAddress = payload.canisterAddress;
-    icpCanister = new Ledger(Principal.fromText(payload.canisterAddress))
+    icpCanister = new Ledger(Principal.fromText(payload.canisterAddress));
+    tokenCanister = new Token(Principal.fromText(payload.tokenAddress));
+    initialized = true;
+    
+    return Result.Ok<string, string>("Initialized");
 }
 
 // function to deposit icp tokens and join the dao
 $update
-export async function joinDAO(amount: nat64): Promise<Result<string, string>>  {
+export async function joinDAO(payload: JoinPayload): Promise<Result<string, string>>  {
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+
+    let amount = payload.amount;
+    
     // check if contribution period has ended
     if(ic.time() > contributionEnds){
         return Result.Err<string, string>("cannot contribute after contributionEnds");
@@ -85,8 +90,16 @@ export async function joinDAO(amount: nat64): Promise<Result<string, string>>  {
 
     let caller = ic.caller()
 
-    // initiate deposit
-    await deposit(amount);
+    // if network is set to local network use dummy tokens
+    if(network == 0){
+        let status = (await tokenCanister.transfer(ic.caller().toString(), canisterAddress, amount).call()).Ok;   
+        if(!status){
+            ic.trap("Failed to Donate")
+        }
+    } else {
+        // initiate deposit
+        await deposit(amount);
+    }
     
     // update user shares
     const updatedShares = match(sharesStorage.get(caller), {
@@ -109,8 +122,16 @@ export async function joinDAO(amount: nat64): Promise<Result<string, string>>  {
 
 // function to withdraw icp tokens from dao
 $update
-export async function redeemShares(amount: nat64, addressTo: string):  Promise<Result<string, string>> {
+export async function redeemShares(payload: RedeemPayload):  Promise<Result<string, string>> {
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+    
     let caller = ic.caller();
+
+    let amount = payload.amount;
+    let addressTo = payload.addressTo;
 
     // check if the available amount is greater than the amount
     if(availableFunds < amount){
@@ -129,8 +150,16 @@ export async function redeemShares(amount: nat64, addressTo: string):  Promise<R
         None: () => ic.trap("you don't have any shares")
     })
 
-    // transfer funds
-    await transfer(addressTo, amount);
+    // if network is set to local network use dummy tokens
+    if(network == 0){
+        let status = (await tokenCanister.transfer(canisterAddress, ic.caller().toString(), amount).call()).Ok;   
+        if(!status){
+            ic.trap("Failed to Redeem shares")
+        }
+    } else {
+        // transfer funds
+        await transfer(addressTo, amount);    
+    }
 
     // check if user shares become 0 and remove user from dao or update the remaining amount
     if(updatedShares == BigInt(0)){
@@ -150,8 +179,15 @@ export async function redeemShares(amount: nat64, addressTo: string):  Promise<R
 
 // function to transfer shares from one user to another
 $update 
-export function transferShares(amount: nat64, to: Principal): Result<string, string> {
+export function transferShares(payload: TransferPayload): Result<string, string> {
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+
     let caller = ic.caller();
+    let to = Principal.fromText(payload.to);
+    let amount = payload.amount;
 
     // get updated shares for sender
     const updatedFromShares = match(sharesStorage.get(caller), {
@@ -187,6 +223,11 @@ export function transferShares(amount: nat64, to: Principal): Result<string, str
 // function to create a new proposal
 $update
 export function createProposal(payload: ProposalPayload): Result<string, string>{
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+    
     let caller = ic.caller();
 
     // check if available funds is enough
@@ -226,8 +267,14 @@ export function createProposal(payload: ProposalPayload): Result<string, string>
 
 // function to vote for a proposal
 $update
-export function voteProposal(proposalId: int32): Result<string, string>{
+export function voteProposal(proposal: QueryPayload): Result<string, string>{
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+
     let caller = ic.caller();
+    let proposalId = proposal.proposalId;
 
     // get user shares
     const shares = match(sharesStorage.get(caller), {
@@ -278,8 +325,14 @@ export function voteProposal(proposalId: int32): Result<string, string>{
 
 // function to execute a proposal, can only be called by the contract admin
 $update 
-export function executeProposal(proposalId: int32): Result<string, string> {
+export function executeProposal(payload: QueryPayload): Result<string, string> {
+    // check if canister is already initialized
+    if(!initialized){
+        ic.trap("canister not yet initialized")
+    }
+
     let caller = ic.caller();
+    let proposalId = payload.proposalId;
 
     let executed: boolean = false;
     // check if caller is admin
@@ -300,7 +353,17 @@ export function executeProposal(proposalId: int32): Result<string, string> {
 
             if(proposal.votes / totalShares * BigInt(100) >= quorum){ 
                 // initiate transfer
-                await transfer(proposal.recipient, proposal.amount);
+
+                // if network is set to local network use dummy tokens
+                if(network == 0){
+                    let status = (await tokenCanister.transfer(canisterAddress, proposal.recipient, proposal.amount).call()).Ok;   
+                    if(!status){
+                        ic.trap("failed to transfer")
+                    }
+                } else {
+                    // mainnet function
+                    await transfer(proposal.recipient, proposal.amount);
+                }
 
                 executed = true;
             }else{
@@ -333,6 +396,27 @@ export function getProposal(proposalId: int32): Result<Proposal, string> {
         Some: (proposal) => Result.Ok<Proposal, string>(proposal),
         None: () => Result.Err<Proposal, string>(`proposal with id=${proposalId} not found`)
     });
+}
+
+// Helper functions
+$update
+export async function getFaucetTokens(): Promise<Result<boolean, string>>{
+    const caller = ic.caller();
+    const returnVal = (await tokenCanister.balance(caller.toString()).call()).Ok;
+    const balance = returnVal? returnVal : 0n;
+    if(balance > 0n){
+        ic.trap("To prevent faucet drain, please utilize your existing tokens");
+    }
+    return await tokenCanister.transfer(canisterAddress, caller.toString(), 100n).call();   
+}
+
+$update;
+export async function walletBalanceLocal(payload: AddressPayload): Promise<Result<nat64, string>> {
+    let address = payload.address
+    if(address == ""){
+        address = ic.caller().toString();
+    }
+    return await tokenCanister.balance(address).call();
 }
 
 async function getAccountBalance(
