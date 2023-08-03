@@ -15,16 +15,24 @@ This DAO contract:
 
 On deployment the contract has been set to 70 % approval, 365 days of contributions, 24 hours for voting.
 
-## To start the Local Internet Computer
+## To Deploy
+
+- Start ICP server
 
 ```bash
-dfx start --background
+dfx start --background --clean
 ```
 
-To deploy the canister
+- Generate addresses
 
 ```bash
-dfx deploy --argument '(record {contributionTime= <nat>; voteTime= <nat>; quorum= <nat>; canisterAddress= "CANISTER_ADDRESS"; tokenAddress="TOKEN_ADDRESS"})' DAO
+dfx canister create --all
+```
+
+- deploy the canister
+
+```bash
+dfx deploy
 ```
 
 ## Testing locally
@@ -34,6 +42,6 @@ Added the dummy tokens which allows users to test the canister locally.
 Steps involved:
 
 - Deploy canister `dfx deploy`
-- Run the `initialize` function setting the payload network to 0
+- Run the `initialize` function setting the payload network to 0 using adresses generated from the cli 
 - Then claim faucet dummy tokens using the `getFaucetTokens` function
 - Then you should be able to test the canister properly.
