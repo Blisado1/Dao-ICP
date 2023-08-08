@@ -20,6 +20,19 @@ export type Proposal = Record<{
     ended: boolean;
 }>
 
+export type DaoData = Record<{
+    totalShares: string;
+    availableFunds:  string;
+    lockedFunds: string;
+    contributionEnds: string;
+    nextProposalId: string;
+    quorum: string;
+    voteTime: string;
+    admin: string;
+    network: string;
+    initialized: boolean;
+}>
+
 export type InitPayload = Record<{
      // network: local:0 or mainnet:1
     network: int8
@@ -46,7 +59,6 @@ export type JoinPayload = Record<{
  
 export type RedeemPayload = Record<{
     amount: nat64;
-    addressTo: string
 }> 
 
 export type TransferPayload = Record<{
@@ -71,7 +83,6 @@ export type State = {
     ticker: string;
     totalSupply: nat64;
 };
-
 
 export class Token extends Service {
     @serviceUpdate
