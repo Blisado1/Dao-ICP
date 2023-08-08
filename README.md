@@ -31,11 +31,11 @@ Added the dummy tokens which allows users to test the canister locally.
 
 Steps involved:
 
-- Deploy canister `dfx deploy` and take note of the dao canister address and token canister address
+- Deploy canister `dfx deploy` and take note of the dao canister address and token canister address. [Link](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/deploy.gif)
 
 ![img](src/assets/gifs/deploy.gif)
 
-- Run the `init` function setting the payload network to 0
+- Run the `init` function setting the payload network to 0. [Link](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/init.gif)
   
         Parameters:
                 - network: 0 for dummy tokens | 1 for ICP Ledger (use 0 for testing)
@@ -47,33 +47,33 @@ Steps involved:
 
 ![img](src/assets/gifs/init.gif)
 
-- Then claim faucet dummy tokens using the `getFaucetTokens` function
+- Then claim faucet dummy tokens using the `getFaucetTokens` function. [Link](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/faucet.gif)
 
 ![img](src/assets/gifs/faucet.gif)
 
 - Then you should be able to test the canister properly.
 
-- `JoinDAO` Test
+- `JoinDAO` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/joinDao.gif)
   
   ![img](src/assets/gifs/joinDao.gif)
 
-- `RedeemShares` Test
+- `RedeemShares` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/redeemShares.gif)
   
   ![img](src/assets/gifs/redeemShares.gif)
 
-- `TransferShares` Test
+- `TransferShares` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/transferShares.gif)
   
   ![img](src/assets/gifs/transferShares.gif)
 
-- `Create Proposal` Test
+- `Create Proposal` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/createProposal.gif)
   
   ![img](src/assets/gifs/createProposal.gif)
 
-- `Vote Proposal` Test
+- `Vote Proposal` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/voteProposal.gif)
   
   ![img](src/assets/gifs/voteProposal.gif)
 
-- `Execute Proposal` Test
+- `Execute Proposal` [Test](https://github.com/Blisado1/Dao-ICP/blob/main/src/assets/gifs/executeProposal.gif)
   
   ![img](src/assets/gifs/executeProposal.gif)
 
