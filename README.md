@@ -76,3 +76,9 @@ Steps involved:
 - `Execute Proposal` Test
   
   ![img](src/assets/gifs/executeProposal.gif)
+
+
+- Test Addresses used in the Tests
+        
+        user1: asrmz-lmaaa-aaaaa-qaaeq-cai
+        user2: b77ix-eeaaa-aaaaa-qaada-cai
